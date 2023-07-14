@@ -1,86 +1,52 @@
 import * as userRepository from "../repositories/userRepositories.js";
-import conexion from "../mysqlStrategy/mysqlStrategy.js";
 import * as errorsUtills from "../utils/errorUtills.js";
+import { queryAsync } from "../utils/query.js";
 
-export function getUserByName(name) {
-  return new Promise((resolve, reject) => {
-    conexion.query(userRepository.getUserByName, [name], function (error, results) {
-      if(error) {
-        console.log(error);
-        reject();
-      } else {
-        resolve(results);
-      }
-  });
-  });  
-}
-
-
-export async function insertUser(name, age) {
-  try {
-    const userExist = await getUserByName(name);
-
-    if (userExist) {
-      throw errorsUtills.failsConflict('This user already exists!');
-    } else {
-      await queryAsync(userRepository.insertUser, [name, age]);
-      console.log("Created");
-    }
-  } catch (error) {
-    console.error(error);
-    throw error;
+export async function getUserByName(name) {
+  const result = await queryAsync(userRepository.getUserByName, [name]);
+  if (result) {
+    return result;
   }
 }
 
-export function deleteUser(id) {
-  return new Promise((resolve, reject) => {
-    conexion.query(userRepository.deleteUser, [id], function (error, results) {
-      if (error) {
-        reject();
-      } else {
-        console.log(results);
-        resolve(results);
-      }
-    });
-  });
+export async function insertUser(name, age) {
+  const userExist = await getUserByName(name);
+
+  if (userExist.length > 0) {
+    throw errorsUtills.failsConflict("This user already exists!");
+  } else {
+    await queryAsync(userRepository.insertUser, [name, age]);
+    return;
+  }
 }
 
-export function selectUser(id) {
-  return new Promise((resolve, reject) => {
-    conexion.query(userRepository.selectUser, [id], function (error, results) {
-      if (error) {
-        reject();
-      } else {
-        console.log(results);
-        resolve(results);
-      }
-    });
-  });
+export async function deleteUser(id) {
+  const userExist = await selectUser(id);
+  if (userExist.length == 0) {
+    throw errorsUtills.failNotFound("This user do not exist!");
+  }
+  await queryAsync(userRepository.deleteUser, [id]);
+  return;
+}
+
+export async function selectUser(id) {
+  const selectUser = await queryAsync(userRepository.selectUser, [id]);
+  if (selectUser.length == 0) {
+    throw errorsUtills.failNotFound("This user do not exist!");
+  }
+  return selectUser;
 }
 
 export async function selectUsers() {
-  return new Promise((resolve, reject) => {
-    conexion.query(userRepository.selectUsers, function (error, results) {
-      if (error) {
-        reject();
-      } else {
-        console.log(results);
-        resolve(results);
-      }
-    });
-  });
+  const selectUsers = await queryAsync(userRepository.selectUsers);
+  return selectUsers;
 }
 
-export function updateUser(name, age, id) {
-  return new Promise((resolve, reject) => {
-    conexion.query(userRepository.updateUser, [name, age, id], function (error, results) {
-      if (error) {
-        console.log(error);
-        reject();
-      } else {
-        console.log(results);
-        resolve(results);
-      }
-    });
-  });
+export async function updateUser(name, age, id) {
+  const userExist = await selectUser(id);
+  if (userExist.length == 0) {
+    throw errorsUtills.failNotFound("This user do not exist!");
+  }
+  await queryAsync(userRepository.updateUser, [name, age, id]);
+  return;
 }

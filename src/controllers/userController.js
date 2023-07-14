@@ -3,7 +3,6 @@ import * as userService from "../services/userServices.js";
 export async function insertUser(req, res) {
     const user = req.body;
     const result = await userService.insertUser(user.name, user.age);
-    console.log(result)
     res.sendStatus(201);
 }
     
